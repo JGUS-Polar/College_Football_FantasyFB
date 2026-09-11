@@ -17,12 +17,12 @@ One real football game between two CollegeTeams.
 _Avoid_: Matchup (that's the fantasy pairing), Contest
 
 **Week**:
-Which week of the season it is — the week number a Game belongs to. The fantasy season runs on regular-season weeks only; bowl and playoff games are never scored.
-_Avoid_: Scoring period, game week, matchup week
+A span of dates that one round of fantasy competition is played over. A Week owns its own start and end; a Game belongs to the Week its kickoff falls inside. The provider's own week number is carried alongside as a join key for fetching stats, but it is never the Week's identity — the provider's weeks are not always seven days and do not always hold one Game per CollegeTeam. The fantasy season runs on regular-season Weeks only; bowl and playoff games are never scored, and neither is conference championship week.
+_Avoid_: Scoring period, game week, matchup week, CFBD week (that's the join key, not the Week)
 
 **Bye**:
-A CollegeTeam having no Game in a given Week. There is no source field for this; it is the absence of a Game.
-_Avoid_: Open week, off week
+A CollegeTeam having no Game in a Week whose schedule is known. It is the absence of a Game — but only once the schedule for that Week has been published. Before that, a CollegeTeam with no Game is unscheduled, not on a bye, and the two must never be shown to a Manager as the same thing. A Game that moves out of a Week leaves a third state behind it: postponed.
+_Avoid_: Open week, off week, "no game" (ambiguous — covers all three states)
 
 **StatLine**:
 One Player's raw, unscored production in one Game — the authoritative fact everything else is derived from. A Player of kind `team_defense` has a StatLine too, with its own stat vocabulary.
@@ -79,12 +79,16 @@ A LeagueSeason's configuration of what a Roster and Lineup look like: which Line
 _Avoid_: League settings (too broad), roster rules
 
 **Lineup**:
-The Players a Franchise starts in one Week. It freezes when the Week locks and is never recomputed, so it stays truthful about who was actually started.
-_Avoid_: Starters, active roster, roster (a Lineup is chosen *from* a Roster)
+The Players a Franchise starts in one Week. A Lineup never freezes as a whole; it freezes one LineupSlot at a time as each slot's Game kicks off, and is fully settled only once the Week ends. It is never recomputed, so it stays truthful about who was actually started.
+_Avoid_: Starters, active roster, roster (a Lineup is chosen *from* a Roster), "the lineup locks" (slots lock, not Lineups)
 
 **LineupSlot**:
-One position in a Lineup — `QB`, `RB1`, `FLEX`, `DEF`, and so on. A team defense occupies a single `DEF` slot.
+One position in a Lineup — `QB`, `RB1`, `FLEX`, `DEF`, and so on. A team defense occupies a single `DEF` slot. A slot is the unit that Locks.
 _Avoid_: RosterSlot (a slot is a lineup concept, never a roster one), position (that's the Player's attribute)
+
+**Lock**:
+The moment a LineupSlot stops being editable, one hour before its Player's Game kicks off. Lock belongs to the slot, not the Lineup or the Week: a Franchise's slots lock at different times across a Week, and a slot whose Player has no Game in the Week never locks at all — it stays editable until the Week ends. A Game that moves reschedules its slots' Lock with it.
+_Avoid_: Lineup lock, weekly lock, deadline, kickoff (Lock is an hour before it)
 
 **Bench**:
 A Player a Franchise owns who is not in that Week's Lineup. Derived, never stored — the Roster and the Lineup are the only two facts.
